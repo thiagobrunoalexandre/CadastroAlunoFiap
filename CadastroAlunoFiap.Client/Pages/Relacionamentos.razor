@@ -1,0 +1,203 @@
+@page "/relacionamentos"
+@using CadastroAlunoFiap.Client.Data.Models
+@inject RelacionamentoService RelacionamentoService
+@inject AlunoService AlunoService
+@inject TurmaService TurmaService
+
+<div class="container mt-5">
+	@if (!string.IsNullOrWhiteSpace(serviceMessage))
+	{
+		<div class="alert alert-info alert-dismissible fade show" role="alert">
+			@serviceMessage
+			<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+		</div>
+	}
+
+	<div class="text-center">
+		<h1 class="display-4 text-fiap-pink">Gerenciar Relacionamentos</h1>
+		<p class="lead">Aqui você pode associar alunos a turmas, visualizar e inativar relacionamentos.</p>
+	</div>
+
+	<div class="row">
+		<!-- Formulário de Associação -->
+		<div class="col-md-6">
+			<h4>Nova/Editar Associação</h4>
+			<EditForm Model="@novoRelacionamento" OnValidSubmit="CriarOuEditarRelacionamento">
+				<DataAnnotationsValidator />
+				<div class="mb-3">
+					<label for="aluno" class="form-label">Aluno</label>
+					<InputSelect id="aluno" class="form-control" @bind-Value="novoRelacionamento.AlunoId">
+						<option value="">Selecione um aluno</option>
+						@foreach (var aluno in alunos)
+						{
+							<option value="@aluno.Id">@aluno.Nome</option>
+						}
+					</InputSelect>
+					<ValidationMessage For="@(() => novoRelacionamento.AlunoId)" />
+				</div>
+				<div class="mb-3">
+					<label for="turma" class="form-label">Turma</label>
+					<InputSelect id="turma" class="form-control" @bind-Value="novoRelacionamento.TurmaId">
+						<option value="">Selecione uma turma</option>
+						@foreach (var turma in turmas)
+						{
+							<option value="@turma.Id">@turma.Nome</option>
+						}
+					</InputSelect>
+					<ValidationMessage For="@(() => novoRelacionamento.TurmaId)" />
+				</div>
+				<button type="submit" class="btn btn-primary">Salvar</button>
+			</EditForm>
+		</div>
+
+		<!-- Lista de Turmas -->
+		<div class="col-md-6">
+			<h4>Turmas Existentes</h4>
+			<div class="table-responsive">
+				<table class="table table-striped table-hover">
+					<thead class="table-dark">
+						<tr>
+							<th>Nome da Turma</th>
+							<th>Ações</th>
+						</tr>
+					</thead>
+					<tbody>
+						@if (turmas?.Count > 0)
+						{
+							@foreach (var turma in turmas)
+							{
+								<tr>
+									<td>@turma.Nome</td>
+									<td>
+										<button class="btn btn-primary btn-sm" @onclick="() => CarregarAlunosPorTurma(turma.Id)">
+											<i class="bi bi-eye"></i> Ver Alunos
+										</button>
+									</td>
+								</tr>
+							}
+						}
+						else
+						{
+							<tr>
+								<td colspan="2" class="text-center">Nenhuma turma encontrada.</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<!-- Lista de Alunos Relacionados -->
+
+	<div class="row mt-4">
+		<div class="col-md-12">
+			<h4>Alunos Relacionados à Turma - @nomeDaTurmaSelecionada</h4>
+			<div class="table-responsive">
+				<table class="table table-striped table-hover">
+					<thead class="table-dark">
+						<tr>
+							<th>Nome do Aluno</th>
+							<th>Ações</th>
+						</tr>
+					</thead>
+					<tbody>
+						@if (alunosDaTurma?.Count > 0)
+						{
+							@foreach (var aluno in alunosDaTurma)
+							{
+								<tr>
+									<td>@aluno.Nome</td>
+									<td>
+										<button class="btn btn-danger btn-sm" @onclick="() => InativarRelacionamento(aluno.RelacionamentoId)">
+											<i class="bi bi-trash-fill"></i> Inativar
+										</button>
+									</td>
+								</tr>
+							}
+						}
+						else
+						{
+							<tr>
+								<td colspan="2" class="text-center">Nenhuma aluno encontrado.</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+</div>
+
+@code {
+	private List<Aluno> alunos = new();
+	private List<Turma> turmas = new();
+	private List<Aluno> alunosDaTurma = new();
+	private RelacionamentoAlunoTurma novoRelacionamento = new();
+	private string serviceMessage = string.Empty;
+	private string nomeDaTurmaSelecionada = string.Empty;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await CarregarDados();
+	}
+
+	private async Task CarregarDados()
+	{
+		alunos = await AlunoService.GetAlunosAsync();
+		turmas = await TurmaService.GetTurmasAsync();
+		alunosDaTurma.Clear();
+	}
+
+	private async Task CriarOuEditarRelacionamento()
+	{
+		serviceMessage = string.Empty;
+		try
+		{
+			var resultado = await RelacionamentoService.CriarOuAtualizarRelacionamentoAsync(novoRelacionamento);
+			serviceMessage = resultado;
+			await CarregarDados();
+			novoRelacionamento = new();
+		}
+		catch (Exception ex)
+		{
+			serviceMessage = $"Erro: {ex.Message}";
+		}
+	}
+
+	private async Task CarregarAlunosPorTurma(int turmaId)
+	{
+		serviceMessage = string.Empty;
+		try
+		{
+			alunosDaTurma = await RelacionamentoService.GetAlunosByTurmaIdAsync(turmaId);
+			var turma = turmas.FirstOrDefault(t => t.Id == turmaId);
+			nomeDaTurmaSelecionada = turma?.Nome ?? string.Empty;
+		}
+		catch (Exception ex)
+		{
+			serviceMessage = $"Erro ao carregar alunos: {ex.Message}";
+		}
+	}
+
+	private async Task InativarRelacionamento(int relacionamentoId)
+	{
+		serviceMessage = string.Empty;
+		try
+		{
+			var resultado = await RelacionamentoService.InativarRelacionamentoAsync(relacionamentoId);
+			serviceMessage = resultado;
+
+			if (!string.IsNullOrEmpty(nomeDaTurmaSelecionada))
+			{
+				var turmaId = turmas.FirstOrDefault(t => t.Nome == nomeDaTurmaSelecionada)?.Id ?? 0;
+				await CarregarAlunosPorTurma(turmaId);
+			}
+		}
+		catch (Exception ex)
+		{
+			serviceMessage = $"Erro ao inativar o relacionamento: {ex.Message}";
+		}
+	}
+}

@@ -1,0 +1,6 @@
+@CadastroAlunoFiap_HostAddress = http://localhost:5218
+
+GET {{CadastroAlunoFiap_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

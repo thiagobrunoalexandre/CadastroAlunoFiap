@@ -1,0 +1,250 @@
+@page "/alunos"
+@using CadastroAlunoFiap.Client.Data.Models
+@inject AlunoService AlunoService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<div class="container mt-5">
+    @if (!string.IsNullOrWhiteSpace(serviceErrorMessage))
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            @serviceErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+    }
+    <div class="text-center">
+        <h1 class="display-4 text-fiap-pink">Gerenciar Alunos</h1>
+        <p class="lead">Aqui você pode cadastrar, editar e inativar alunos.</p>
+    </div>
+
+    <div class="d-flex justify-content-between mb-3">
+        <button class="btn btn-secondary btn-lg" @onclick="VoltarParaIndex">
+            <i class="bi bi-arrow-left-circle"></i> Voltar
+        </button>
+        <button class="btn fiap-pink btn-lg" @onclick="AbrirModalNovoAluno">
+            <i class="bi bi-plus-circle"></i> Novo Aluno
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Nome</th>
+                    <th>Usuário</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (alunos?.Count > 0)
+                {
+                    @foreach (var aluno in alunos)
+                    {
+                        <tr>
+                            <td>@aluno.Id</td>
+                            <td>@aluno.Nome</td>
+                            <td>@aluno.Usuario</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm me-2" @onclick="() => EditarAluno(aluno.Id)">
+                                    <i class="bi bi-pencil-fill"></i> Editar
+                                </button>
+                                <button class="btn btn-danger btn-sm" @onclick="() => InativarAluno(aluno.Id)">
+                                    <i class="bi bi-trash-fill"></i> Inativar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="4" class="text-center">Nenhum aluno encontrado.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal para Cadastro/Edição de Aluno -->
+<div class="modal fade" id="modalNovoAluno" tabindex="-1" aria-labelledby="modalNovoAlunoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalNovoAlunoLabel">@((isEditMode ? "Editar" : "Cadastrar") + " Aluno")</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Exibição de Erro Dentro do Modal -->
+                @if (!string.IsNullOrWhiteSpace(serviceErrorMessage))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @serviceErrorMessage
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <EditForm Model="@alunoAtual" OnValidSubmit="SalvarAluno">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome</label>
+                        <InputText id="nome" class="form-control" @bind-Value="alunoAtual.Nome" />
+                        <ValidationMessage For="@(() => alunoAtual.Nome)" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="usuario" class="form-label">Usuário</label>
+                        <InputText id="usuario" class="form-control" @bind-Value="alunoAtual.Usuario" />
+                        <ValidationMessage For="@(() => alunoAtual.Usuario)" />
+                    </div>
+                    <div class="mb-3" hidden="@isEditMode">
+                        <label for="senha" class="form-label">Senha</label>
+                        <div class="input-group">
+                            <InputText id="senha" type="@passwordInputType" class="form-control" @bind-Value="alunoAtual.Senha" />
+                            <button type="button" class="btn btn-outline-secondary" @onclick="TogglePasswordVisibility">
+                                @passwordToggleIcon
+                            </button>
+                        </div>
+                        <ValidationMessage For="@(() => alunoAtual.Senha)" />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Aluno> alunos = new();
+    private Aluno alunoAtual = new();
+    private bool isEditMode = false;
+    private string serviceErrorMessage = string.Empty;
+    private string passwordInputType = "password";
+    private string passwordToggleIcon = "👁️"; // Alternar entre ícones de olho aberto e fechado.
+
+    private void TogglePasswordVisibility()
+    {
+        if (passwordInputType == "password")
+        {
+            passwordInputType = "text";
+            passwordToggleIcon = "🙈"; // Ícone de olho fechado.
+        }
+        else
+        {
+            passwordInputType = "password";
+            passwordToggleIcon = "👁️"; // Ícone de olho aberto.
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarAlunos();
+    }
+
+    private async Task CarregarAlunos()
+    {
+        alunos = await AlunoService.GetAlunosAsync();
+    }
+
+    private async Task AbrirModalNovoAluno()
+    {
+        alunoAtual = new();
+        serviceErrorMessage = string.Empty;
+        isEditMode = false;
+        await AbrirModal("#modalNovoAluno");
+    }
+
+    private async Task EditarAluno(int id)
+    {
+        alunoAtual = await AlunoService.GetAlunoByIdAsync(id);
+        serviceErrorMessage = string.Empty;
+        isEditMode = true;
+        await AbrirModal("#modalNovoAluno");
+    }
+
+    private async Task SalvarAluno()
+    {
+        serviceErrorMessage = string.Empty;
+
+        try
+        {
+            string result;
+            if (isEditMode)
+            {
+                result = await AlunoService.AtualizarAlunoAsync(alunoAtual);
+            }
+            else
+            {
+                result = await AlunoService.CriarAlunoAsync(alunoAtual);
+            }
+
+            if (result.Contains("Erro"))
+            {
+                // Exibe a mensagem de erro do serviço
+                serviceErrorMessage = result;
+            }
+            else
+            {
+                // Sucesso: Fecha o modal e recarrega a lista
+                await CarregarAlunos();
+                await FecharModal("#modalNovoAluno");
+                serviceErrorMessage = result;
+            }
+        }
+        catch (Exception ex)
+        {
+            serviceErrorMessage = $"Erro inesperado: {ex.Message}";
+        }
+    }
+
+    private async Task InativarAluno(int id)
+    {
+        serviceErrorMessage = string.Empty;
+
+        try
+        {
+            var confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Tem certeza que deseja inativar este aluno?");
+            if (confirm)
+            {
+                string result = await AlunoService.InativarAlunoAsync(id);
+
+                if (result.Contains("Erro"))
+                {
+             
+                    serviceErrorMessage = result;
+                }
+                else
+                {
+                   
+                    await CarregarAlunos();
+                    serviceErrorMessage = result;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            serviceErrorMessage = $"Erro inesperado: {ex.Message}";
+        }
+    }
+
+
+    private async Task AbrirModal(string modalId)
+    {
+        await JSRuntime.InvokeVoidAsync("eval", $"new bootstrap.Modal(document.getElementById('{modalId.Replace("#", "")}')).show()");
+    }
+
+    private async Task FecharModal(string modalId)
+    {
+        var modalInstance = await JSRuntime.InvokeAsync<IJSObjectReference>("bootstrap.Modal.getOrCreateInstance", modalId);
+        await modalInstance.InvokeVoidAsync("hide");
+    }
+
+    private void VoltarParaIndex()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}

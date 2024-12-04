@@ -1,0 +1,52 @@
+@page "/"
+
+<div class="container mt-5">
+    <!-- Título Principal -->
+    <div class="text-center">
+        <h1 class="display-4 text-fiap-pink">Cadastro de Alunos</h1>
+        <p class="lead">Escolha uma das opções abaixo para começar:</p>
+    </div>
+
+    <!-- Botões -->
+    <div class="row justify-content-center mt-4">
+        <div class="col-md-3 mb-3">
+            <button class="btn fiap-pink btn-lg w-100" @onclick="NavegarParaAlunos">
+                <i class="bi bi-person-fill"></i> Gerenciar Alunos
+            </button>
+        </div>
+        <div class="col-md-3 mb-3">
+            <button class="btn fiap-darkgray btn-lg w-100" @onclick="NavegarParaTurmas">
+                <i class="bi bi-people-fill"></i> Gerenciar Turmas
+            </button>
+        </div>
+        <div class="col-md-3 mb-3">
+            <button class="btn fiap-lightgray btn-lg w-100" @onclick="NavegarParaRelacionarTurmas">
+                <i class="bi bi-link-45deg"></i> Relacionar Turmas
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Rodapé -->
+<footer class="footer text-center text-white p-3 bg-dark">
+    © 2024 FIAP - Todos os direitos reservados.
+</footer>
+
+@code {
+    [Inject] private NavigationManager NavigationManager { get; set; }
+
+    private void NavegarParaAlunos()
+    {
+        NavigationManager.NavigateTo("/alunos");
+    }
+
+    private void NavegarParaTurmas()
+    {
+        NavigationManager.NavigateTo("/turmas");
+    }
+
+    private void NavegarParaRelacionarTurmas()
+    {
+        NavigationManager.NavigateTo("/relacionamentos");
+    }
+}

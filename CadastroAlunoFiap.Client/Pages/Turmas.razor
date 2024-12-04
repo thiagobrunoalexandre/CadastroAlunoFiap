@@ -1,0 +1,218 @@
+@page "/turmas"
+@using CadastroAlunoFiap.Client.Data.Models
+@inject TurmaService TurmaService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<div class="container mt-5">
+    @if (!string.IsNullOrWhiteSpace(serviceErrorMessage))
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            @serviceErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    <div class="text-center">
+        <h1 class="display-4 text-fiap-pink">Gerenciar Turmas</h1>
+        <p class="lead">Aqui você pode cadastrar, editar e inativar turmas.</p>
+    </div>
+
+    <div class="d-flex justify-content-between mb-3">
+        <button class="btn btn-secondary btn-lg" @onclick="VoltarParaIndex">
+            <i class="bi bi-arrow-left-circle"></i> Voltar
+        </button>
+        <button class="btn fiap-pink btn-lg" @onclick="AbrirModalNovaTurma">
+            <i class="bi bi-plus-circle"></i> Nova Turma
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Nome</th>
+                    <th>Descrição</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (turmas?.Count > 0)
+                {
+                    @foreach (var turma in turmas)
+                    {
+                        <tr>
+                            <td>@turma.Id</td>
+                            <td>@turma.Nome</td>
+                            <td>@turma.Descricao</td>
+                             <td>
+                                <button class="btn btn-warning btn-sm me-2" @onclick="() => EditarTurma(turma.Id)">
+                                    <i class="bi bi-pencil-fill"></i> Editar
+                                </button>
+                                <button class="btn btn-danger btn-sm" @onclick="() => InativarTurma(turma.Id)">
+                                    <i class="bi bi-trash-fill"></i> Inativar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center">Nenhuma turma encontrada.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal para Cadastro/Edição de Turma -->
+<div class="modal fade" id="modalNovaTurma" tabindex="-1" aria-labelledby="modalNovaTurmaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalNovaTurmaLabel">@((isEditMode ? "Editar" : "Cadastrar") + " Turma")</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if (!string.IsNullOrWhiteSpace(serviceErrorMessage))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @serviceErrorMessage
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <EditForm Model="@turmaAtual" OnValidSubmit="SalvarTurma">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome</label>
+                        <InputText id="nome" class="form-control" @bind-Value="turmaAtual.Nome" />
+                        <ValidationMessage For="@(() => turmaAtual.Nome)" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="descricao" class="form-label">Descrição</label>
+                        <InputText id="descricao" class="form-control" @bind-Value="turmaAtual.Descricao" />
+                        <ValidationMessage For="@(() => turmaAtual.Descricao)" />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Turma> turmas = new();
+    private Turma turmaAtual = new();
+    private bool isEditMode = false;
+    private string serviceErrorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarTurmas();
+    }
+
+    private async Task CarregarTurmas()
+    {
+        turmas = await TurmaService.GetTurmasAsync();
+    }
+
+    private async Task AbrirModalNovaTurma()
+    {
+        turmaAtual = new();
+        serviceErrorMessage = string.Empty;
+        isEditMode = false;
+        await AbrirModal("#modalNovaTurma");
+    }
+
+    private async Task EditarTurma(int id)
+    {
+        turmaAtual = await TurmaService.GetTurmaByIdAsync(id);
+        serviceErrorMessage = string.Empty;
+        isEditMode = true;
+        await AbrirModal("#modalNovaTurma");
+    }
+
+    private async Task SalvarTurma()
+    {
+        serviceErrorMessage = string.Empty;
+
+        try
+        {
+            string result;
+            if (isEditMode)
+            {
+                result = await TurmaService.AtualizarTurmaAsync(turmaAtual);
+            }
+            else
+            {
+                result = await TurmaService.CriarTurmaAsync(turmaAtual);
+            }
+
+            if (result.Contains("Erro"))
+            {
+                serviceErrorMessage = result;
+            }
+            else
+            {
+                await CarregarTurmas();
+                await FecharModal("#modalNovaTurma");
+                serviceErrorMessage = result;
+            }
+        }
+        catch (Exception ex)
+        {
+            serviceErrorMessage = $"Erro inesperado: {ex.Message}";
+        }
+    }
+
+    private async Task InativarTurma(int id)
+    {
+        serviceErrorMessage = string.Empty;
+
+        try
+        {
+            var confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Tem certeza que deseja inativar esta turma?");
+            if (confirm)
+            {
+                string result = await TurmaService.InativarTurmaAsync(id);
+
+                if (result.Contains("Erro"))
+                {
+                    serviceErrorMessage = result;
+                }
+                else
+                {
+                    await CarregarTurmas();
+                    serviceErrorMessage = result;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            serviceErrorMessage = $"Erro inesperado: {ex.Message}";
+        }
+    }
+
+    private async Task AbrirModal(string modalId)
+    {
+        await JSRuntime.InvokeVoidAsync("eval", $"new bootstrap.Modal(document.getElementById('{modalId.Replace("#", "")}')).show()");
+    }
+
+    private async Task FecharModal(string modalId)
+    {
+        var modalInstance = await JSRuntime.InvokeAsync<IJSObjectReference>("bootstrap.Modal.getOrCreateInstance", modalId);
+        await modalInstance.InvokeVoidAsync("hide");
+    }
+
+    private void VoltarParaIndex()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}

@@ -1,0 +1,95 @@
+﻿/* Ajustes para a barra de navegação */
+.navbar-brand img {
+    filter: brightness(0) invert(1);
+}
+
+.navbar-dark .navbar-nav .nav-link {
+    color: #fff;
+    font-weight: bold;
+    margin-right: 15px;
+}
+
+    .navbar-dark .navbar-nav .nav-link:hover {
+        color: #d63384;
+        text-decoration: underline;
+    }
+
+/* Botão personalizado */
+.btn-danger {
+    background-color: #d63384;
+    border-color: #d63384;
+}
+
+    .btn-danger:hover {
+        background-color: #a02663;
+        border-color: #a02663;
+    }
+
+/* Footer */
+footer {
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+}
+/* Botão Rosa (FIAP Pink) */
+.btn.fiap-pink {
+    background-color: deeppink; /* Rosa FIAP */
+    border-color: #d63384;
+    color: #fff;
+}
+
+    .btn.fiap-pink:hover {
+        background-color: #E91C5D;
+        border-color: #a02663;
+        color: #fff;
+    }
+
+/* Botão Cinza Escuro (FIAP Dark Gray) */
+.btn.fiap-darkgray {
+    background-color: #343a40; /* Cinza Escuro */
+    border-color: #343a40;
+    color: #fff;
+}
+
+    .btn.fiap-darkgray:hover {
+        background-color: #23272b;
+        border-color: #23272b;
+        color: #fff;
+    }
+
+/* Botão Cinza Claro (FIAP Light Gray) */
+.btn.fiap-lightgray {
+    background-color: #6c757d; /* Cinza Claro */
+    border-color: #6c757d;
+    color: #fff;
+}
+
+    .btn.fiap-lightgray:hover {
+        background-color: #545b62;
+        border-color: #545b62;
+        color: #fff;
+    }
+/* Título Rosa FIAP */
+.text-fiap-pink {
+    color: #E91C5D; /* Rosa FIAP */
+    font-weight: bold;
+}
+/* Configuração do rodapé */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.container {
+    flex: 1; /* Garante que o conteúdo ocupe o espaço necessário */
+}
+
+.footer {
+    margin-top: 2rem; /* Espaçamento de dois dedos antes do fim da página */
+}
+
+
+
+
+    
